@@ -8,7 +8,8 @@ use ratatui::{
     crossterm::event::{self, Event},
     layout::{Constraint, HorizontalAlignment, Layout, Rect},
     style::{Color, Style},
-    widgets::{Block, BorderType, Paragraph, Row, Table, TableState},
+    text::{Line, Span},
+    widgets::{Block, BorderType, Cell, Paragraph, Row, Table, TableState},
 };
 use std::{
     env,
@@ -28,15 +29,15 @@ use crate::{
 
 #[derive(Parser, Debug)]
 struct Args {
-    /// Name of the anime.
+    /// Name of the anime to watch
     #[arg()]
     name: String,
 
-    /// which mode sub, dub or raw (whatever is available).
-    #[arg(short)]
-    mode: Option<Mode>,
+    /// Audio mode to use
+    #[arg(short, long, value_enum, default_value_t = Mode::Sub)]
+    mode: Mode,
 
-    /// get debuging data.
+    /// Enable debug output
     #[arg(long)]
     debug: bool,
 }
@@ -63,7 +64,7 @@ enum View {
 
 #[derive(Debug)]
 struct App {
-    // select icon
+    /// select icon
     select_icon: String,
     /// current view that is being rendered
     view: View,
@@ -73,30 +74,24 @@ struct App {
     args: Args,
     /// search bar input state
     input: Input,
-    ///
     api: Arc<Api>,
-    ///
     resp: Resp,
-    ///
     matcher: Matcher,
-    ///
     rows_to_data_index: Vec<usize>,
-    ///
     table_state: TableState,
-    //
     ui_loop_tick: Instant,
 }
 
 impl App {
     fn new() -> Self {
         let args = Args::parse();
-        let mode = args.mode.unwrap_or(Mode::Sub);
+        let mode = args.mode;
         let api = Arc::new(Api::new(mode, args.debug));
 
         Self {
             select_icon: String::default(),
             table_state: TableState::default(),
-            args: args,
+            args,
             input: Input::default(),
             api,
             matcher: Matcher::new(Config::DEFAULT),
@@ -130,38 +125,36 @@ impl App {
         let api_clone = self.api.clone();
         let name = self.args.name.clone();
         let tx_clone = tx.clone();
-        thread::spawn(move || match api_clone.search_anime(name) {
+        thread::spawn(move || match api_clone.search_anime(name.as_str()) {
             Ok(resp) => tx_clone.send(Some(Resp {
                 search: Some(resp.data.shows.edges),
                 ..Default::default()
             })),
             Err(e) => {
-                let _ = tx_clone.send(None);
-                panic!("Error getting search results: {}", e);
+                eprintln!("Error getting search results: {}", e);
+                tx_clone.send(None)
             }
         });
 
         while !self.exit {
-            if let Ok(api_resp) = rx.try_recv() {
-                if let Some(resp) = api_resp {
-                    if let Some(search_resp) = resp.search {
-                        self.rows_to_data_index = (0..search_resp.len()).collect();
-                        self.resp.search = Some(search_resp);
-                        self.table_state.select(Some(0));
-                        self.view = View::Search
-                    }
-                    if let Some(ep_list_resp) = resp.episode_list {
-                        self.rows_to_data_index = (0..ep_list_resp.1.len()).collect();
-                        self.resp.episode_list = Some(ep_list_resp);
-                        self.table_state.select(Some(0));
-                        self.view = View::Episode
-                    }
-                    if let Some(ep_provider_list_resp) = resp.episode_provider_list {
-                        self.rows_to_data_index = (0..ep_provider_list_resp.1.len()).collect();
-                        self.resp.episode_provider_list = Some(ep_provider_list_resp);
-                        self.table_state.select(Some(0));
-                        self.view = View::Provider
-                    }
+            if let Ok(Some(resp)) = rx.try_recv() {
+                if let Some(search_resp) = resp.search {
+                    self.rows_to_data_index = (0..search_resp.len()).collect();
+                    self.resp.search = Some(search_resp);
+                    self.table_state.select(Some(0));
+                    self.view = View::Search
+                }
+                if let Some(ep_list_resp) = resp.episode_list {
+                    self.rows_to_data_index = (0..ep_list_resp.1.len()).collect();
+                    self.resp.episode_list = Some(ep_list_resp);
+                    self.table_state.select(Some(0));
+                    self.view = View::Episode
+                }
+                if let Some(ep_provider_list_resp) = resp.episode_provider_list {
+                    self.rows_to_data_index = (0..ep_provider_list_resp.1.len()).collect();
+                    self.resp.episode_provider_list = Some(ep_provider_list_resp);
+                    self.table_state.select(Some(0));
+                    self.view = View::Provider
                 }
             }
 
@@ -199,8 +192,8 @@ impl App {
                                             ..Default::default()
                                         })),
                                         Err(e) => {
-                                            let _ = tx_clone.send(None);
-                                            panic!("Error getting episode list: {}", e);
+                                            eprintln!("Error getting episode list: {}", e);
+                                            tx_clone.send(None)
                                         }
                                     });
                                 }
@@ -221,8 +214,8 @@ impl App {
                                                 ..Default::default()
                                             })),
                                             Err(e) => {
-                                                let _ = tx_clone.send(None);
-                                                panic!("Error getting episode links: {}", e);
+                                                eprintln!("Error getting episode links: {}", e);
+                                                tx_clone.send(None)
                                             }
                                         }
                                     });
@@ -238,28 +231,27 @@ impl App {
                                     let (_provider, url) = &links[self.rows_to_data_index[row]];
                                     let api = self.api.clone();
 
-                                    let url = &(url.contains("clock.json")
-                                        || url.contains("https://allanime.day"))
-                                    .then(|| api.resolve_clock_urls(&url).unwrap())
-                                    .unwrap_or(url.to_string());
-
-                                    let default_cmd = format!(
-                                        "curl -L -H 'Referer: {}' -H 'User-Agent: {}' {} -O --progress-bar",
-                                        api.referer, api.user_agent, url
-                                    );
+                                    let url = if url.contains("clock.json")
+                                        || url.contains("https://allanime.day")
+                                    {
+                                        api.resolve_clock_urls(url).unwrap()
+                                    } else {
+                                        url.to_string()
+                                    };
 
                                     let mut player_cmd =
-                                        env::var("SHIO_PLAYER_CMD").unwrap_or(default_cmd);
+                                        env::var("SHIO_PLAYER_CMD").unwrap_or(
+                                        "curl -L -H 'Referer: {referer}' -H 'User-Agent: {user_agent}' {url} -O --progress-bar".to_string());
 
                                     if player_cmd.contains("{url}") {
-                                        player_cmd = player_cmd.replace("{url}", url);
+                                        player_cmd = player_cmd.replace("{url}", &url);
                                     }
                                     if player_cmd.contains("{referer}") {
-                                        player_cmd = player_cmd.replace("{referer}", &api.referer)
+                                        player_cmd = player_cmd.replace("{referer}", api.referer)
                                     }
                                     if player_cmd.contains("{user_agent}") {
                                         player_cmd =
-                                            player_cmd.replace("{user_agent}", &api.user_agent)
+                                            player_cmd.replace("{user_agent}", api.user_agent)
                                     }
 
                                     // windows
@@ -298,7 +290,7 @@ impl App {
     /// update the index of rows to data pointer vec
     fn update_row_to_data_index(&mut self) {
         let pattern = Pattern::new(
-            &self.input.value(),
+            self.input.value(),
             CaseMatching::Smart,
             Normalization::Smart,
             AtomKind::Fuzzy,
@@ -326,7 +318,7 @@ impl App {
                 .iter()
                 .enumerate()
                 .filter_map(|(og_index, item)| {
-                    let haystack = Utf32Str::new(&item, &mut buf);
+                    let haystack = Utf32Str::new(item, &mut buf);
                     pattern
                         .score(haystack, &mut self.matcher)
                         .map(|score| (og_index, score))
@@ -405,11 +397,17 @@ impl App {
 
             rows.push(
                 Row::new(vec![
-                    format!("{}\n{}", item.name, english_name),
-                    item.typename.clone(),
-                    ep_count,
+                    Cell::from(Span::raw(index.to_string())),
+                    Cell::from(vec![
+                        Line::from(Span::styled(
+                            item.name.as_str(),
+                            Style::new().magenta().bold(),
+                        )),
+                        Line::from(Span::styled(english_name, Style::new().red().bold())),
+                    ]),
+                    Cell::from(Span::styled(ep_count, Style::new().bold())),
                 ])
-                .height(2),
+                .height(3),
             );
         }
 
@@ -417,8 +415,8 @@ impl App {
             Table::new(
                 rows,
                 [
-                    Constraint::Percentage(90),
                     Constraint::Percentage(5),
+                    Constraint::Percentage(85),
                     Constraint::Fill(1),
                 ],
             )
@@ -436,11 +434,15 @@ impl App {
         );
     }
 
-    fn render_episode_list(&mut self, frame: &mut Frame, area: Rect, data: Vec<String>) {
+    fn render_episode_list(&mut self, frame: &mut Frame, area: Rect) {
+        let Some((_, ep_list, _)) = &self.resp.episode_list else {
+            return;
+        };
+
         let mut rows = Vec::new();
         for index in &self.rows_to_data_index {
-            let item = &data[*index];
-            rows.push(Row::new(vec![item.clone()]).height(2));
+            let item = ep_list[*index].as_str();
+            rows.push(Row::new(vec![Span::styled(item, Style::new().red().bold())]).height(3));
         }
 
         frame.render_stateful_widget(
@@ -459,16 +461,17 @@ impl App {
         );
     }
 
-    fn render_episode_providers(
-        &mut self,
-        frame: &mut Frame,
-        area: Rect,
-        data: Vec<(String, String)>,
-    ) {
+    fn render_episode_providers(&mut self, frame: &mut Frame, area: Rect) {
+        let Some((_, links)) = &self.resp.episode_provider_list else {
+            return;
+        };
+
         let mut rows = Vec::new();
         for index in &self.rows_to_data_index {
-            let (provider_name, _link) = &data[*index];
-            rows.push(Row::new(vec![provider_name.clone()]).height(4));
+            let (provider_name, _link) = &links[*index];
+            rows.push(
+                Row::new(vec![Span::styled(provider_name, Style::new().red().bold())]).height(3),
+            );
         }
 
         frame.render_stateful_widget(
@@ -487,40 +490,28 @@ impl App {
         );
     }
 
-    // fn render_side_menu(&self, frame: &mut Frame, area: Rect) {
-    //     frame.render_widget(Paragraph::new(ASCII_ART).centered(), area);
-    // }
-
     fn render(&mut self, frame: &mut Frame) {
         let [top, bottom] =
             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(frame.area());
 
-        // let [bottom_left, bottom_right] =
-        //     Layout::horizontal([Constraint::Percentage(70), Constraint::Fill(1)]).areas(bottom);
-
         match self.view {
             View::Loading => self.render_skeleton(frame),
             View::Search => {
-                if let Some(_) = &self.resp.search {
+                if self.resp.search.is_some() {
                     self.render_search_input(frame, top);
                     self.render_search_result(frame, bottom);
-                    // self.render_search_result(frame, bottom_left);
-                    // self.render_side_menu(frame, bottom_right);
                 }
             }
             View::Episode => {
-                if let Some((_, ep_list, _)) = &self.resp.episode_list {
+                if self.resp.episode_list.is_some() {
                     self.render_search_input(frame, top);
-                    self.render_episode_list(frame, bottom, ep_list.clone());
-                    // self.render_episode_list(frame, bottom_left, ep_list.clone());
-                    // self.render_side_menu(frame, bottom_right);
+                    self.render_episode_list(frame, bottom);
                 }
             }
             View::Provider => {
-                if let Some((_, links)) = &self.resp.episode_provider_list {
+                if self.resp.episode_provider_list.is_some() {
                     self.render_search_input(frame, top);
-                    self.render_episode_providers(frame, bottom, links.clone());
-                    // self.render_episode_providers(frame, bottom_left, links.clone());
+                    self.render_episode_providers(frame, bottom);
                 }
             }
         }
@@ -530,6 +521,7 @@ impl App {
 fn main() -> color_eyre::eyre::Result<()> {
     color_eyre::install()?;
 
-    ratatui::run(|terminal| App::new().main_loop(terminal))?;
+    let mut app = App::new();
+    ratatui::run(|terminal| app.main_loop(terminal))?;
     Ok(())
 }

@@ -16,8 +16,6 @@ pub struct AnimeEdge {
 
     pub english_name: Option<String>,
     pub available_episodes: Option<HashMap<String, Value>>,
-    #[serde(rename = "__typename")]
-    pub typename: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -82,12 +80,12 @@ pub struct EpisodeListResponse {
 
 #[derive(Debug)]
 pub struct Api {
-    pub base_api: String,
-    pub referer: String,
-    pub agent: Agent,
-    pub user_agent: String,
-    pub mode: String,
+    pub base_api: &'static str,
+    pub referer: &'static str,
+    pub user_agent: &'static str,
+    pub mode: &'static str,
     pub debug: bool,
+    agent: Agent,
 }
 
 #[derive(ValueEnum, Debug, Clone, Copy)]
@@ -105,38 +103,31 @@ impl Api {
             .user_agent(user_agent)
             .https_only(true)
             .build();
-        let agent = Agent::new_with_config(config);
-
-        let mode = match mode {
-            Mode::Sub => "sub",
-            Mode::Dub => "dub",
-            Mode::Raw => "raw",
-        }
-        .to_string();
 
         Api {
-            base_api: "https://api.allanime.day/api".to_string(),
-            referer: "https://allmanga.to".to_string(),
-            agent: agent,
-            user_agent: user_agent.to_string(),
-            mode: mode,
-            debug: debug,
+            base_api: "https://api.allanime.day/api",
+            referer: "https://allmanga.to",
+            user_agent,
+            mode: match mode {
+                Mode::Sub => "sub",
+                Mode::Dub => "dub",
+                Mode::Raw => "raw",
+            },
+            debug,
+            agent: Agent::new_with_config(config),
         }
     }
 
     fn request_api(&self, variables: &str, gql: &str) -> RequestBuilder<WithoutBody> {
         self.agent
-            .get(&self.base_api)
-            .header("Referer", &self.referer)
+            .get(self.base_api)
+            .header("Referer", self.referer)
             .query("variables", variables)
             .query("query", gql)
     }
 
     /// Search for anime with its name
-    pub fn search_anime(
-        &self,
-        query: String,
-    ) -> Result<SearchResponse, Box<dyn std::error::Error>> {
+    pub fn search_anime(&self, query: &str) -> Result<SearchResponse, Box<dyn std::error::Error>> {
         let gql = "query( $search: SearchInput $limit: Int $page: Int $translationType: VaildTranslationTypeEnumType $countryOrigin: VaildCountryOriginEnumType ) { shows( search: $search limit: $limit page: $page translationType: $translationType countryOrigin: $countryOrigin ) { edges { _id name englishName availableEpisodes __typename } }}";
 
         let variables_json = &format!(
@@ -170,22 +161,25 @@ impl Api {
             let provider_name = source.source_name;
             let raw_uri = source.source_url;
 
-            let uri = if raw_uri.starts_with("--") {
-                decrypt_url(&&raw_uri[2..])
-            } else if raw_uri.starts_with("//") {
-                format!("https:{}", raw_uri)
+            let uri = if let Some(stripped) = raw_uri.strip_prefix("--") {
+                decrypt_url(stripped)
+            } else if let Some(stripped) = raw_uri.strip_prefix("//") {
+                format!("https:{}", stripped)
             } else {
                 raw_uri
             };
 
-            let uri = (uri.contains("/clock") && !uri.contains("/clock.json"))
-                .then(|| uri.replace("/clock", "/clock.json"))
-                .unwrap_or(uri);
+            let uri = if uri.contains("/clock") && !uri.contains("/clock.json") {
+                uri.replace("/clock", "/clock.json")
+            } else {
+                uri
+            };
 
-            let uri = uri
-                .starts_with("/apivtwo/")
-                .then(|| format!("https://allanime.day{}", uri))
-                .unwrap_or(uri);
+            let uri = if uri.starts_with("/apivtwo/") {
+                format!("https://allanime.day{}", uri)
+            } else {
+                uri
+            };
 
             if self.debug {
                 unimplemented!()
@@ -198,6 +192,8 @@ impl Api {
     }
 
     pub fn resolve_clock_urls(&self, url: &str) -> Result<String, Box<dyn std::error::Error>> {
+        print!("running");
+
         let resp = self.agent.get(url).call()?;
         let json: serde_json::Value = resp.into_body().read_json()?;
 
@@ -221,16 +217,18 @@ impl Api {
             "query ($showId: String!) { show( _id: $showId ) { _id name availableEpisodesDetail }}";
         let variables_json = &format!(r#"{{"showId":"{}"}}"#, id);
 
-        let resp = self.request_api(variables_json, gql).call()?;
-        let parsed: EpisodeListResponse = resp.into_body().read_json()?;
+        let resp: EpisodeListResponse = self
+            .request_api(variables_json, gql)
+            .call()?
+            .into_body()
+            .read_json()?;
 
-        let mut episodes = parsed
-            .data
-            .show
+        let mut show = resp.data.show;
+
+        let mut episodes = show
             .available_episodes_detail
-            .get(&self.mode)
-            .ok_or(format!("No episodes found for mode '{}'", &self.mode))?
-            .clone();
+            .remove(self.mode)
+            .ok_or(format!("No episodes found for mode '{}'", self.mode))?;
 
         episodes.sort_by(|a, b| {
             let a_num = a.parse::<f64>().unwrap_or(0.0);
@@ -244,6 +242,6 @@ impl Api {
             unimplemented!()
         }
 
-        Ok((parsed.data.show.name, episodes, parsed.data.show.id))
+        Ok((show.name, episodes, show.id))
     }
 }
