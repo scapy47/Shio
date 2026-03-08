@@ -57,8 +57,7 @@ curl https://raw.githubusercontent.com/Scapy47/Shio/refs/heads/main/etc/setup.sh
 ```
 
 **Windows**
-
-1. Download shio-Windows-x86_64.exe.
-2. Rename it to shio.exe.
-3. Move it to a folder in your System PATH or run it directly from PowerShell/CMD.
+```powershell
+irm https://raw.githubusercontent.com/Scapy47/Shio/refs/heads/main/etc/setup.ps1 | iex
+```
 
