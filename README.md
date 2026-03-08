@@ -53,7 +53,7 @@ export SHIO_PLAYER_CMD="mpv --user-agent={user_agent} --http-header-fields='Refe
 
 **Linux / macOS**
 ```sh
-curl https://raw.githubusercontent.com/Scapy47/Shio/refs/heads/main/etc/setup.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Scapy47/Shio/refs/heads/main/etc/setup.sh | sh
 ```
 
 **Windows**
