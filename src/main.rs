@@ -186,6 +186,15 @@ impl App {
                         {
                             self.table_state.select_previous()
                         }
+                        event::KeyCode::Backspace
+                            if key.modifiers.contains(event::KeyModifiers::CONTROL) =>
+                        {
+                            match self.view {
+                                View::Loading | View::Search => (),
+                                View::Episode => self.view = View::Search,
+                                View::Provider => self.view = View::Episode,
+                            }
+                        }
                         event::KeyCode::Enter => match self.view {
                             View::Loading => (),
                             View::Search => {
@@ -234,8 +243,6 @@ impl App {
                             }
                             View::Provider => {
                                 if let Some((_, links)) = &self.resp.episode_provider_list {
-                                    let _ = terminal.clear();
-
                                     let Some(row) = self.table_state.selected() else {
                                         return Ok(());
                                     };
@@ -280,9 +287,10 @@ impl App {
                                         .code()
                                         .unwrap_or(1);
 
-                                    if cmd == 1 || cmd == 0 {
+                                    if cmd == 1 {
                                         self.exit = true;
                                     }
+                                    self.view = View::Episode
                                 }
                             }
                         },
