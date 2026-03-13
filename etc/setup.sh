@@ -5,28 +5,28 @@ OWNER="Scapy47"
 REPO="Shio"
 BASE_URL="https://github.com/$OWNER/$REPO/releases/latest/download"
 
+case "$(uname -m)" in
+  x86_64)         ARCH="x86_64" ;;
+  arm64|aarch64)  echo "arm64 and aarch64 architecture are currently Unsupported"; exit 1 ;;
+  *)              echo "Unsupported architecture"; exit 1 ;;
+esac
+
 case "$(uname)" in
   Darwin) OS="macOS" ;;
   Linux)  OS="Linux" ;;
   *)      echo "Unsupported OS"; exit 1 ;;
 esac
 
-case "$(uname -m)" in
-  x86_64)         ARCH="x86_64" ;;
-  arm64|aarch64)  ARCH="aarch64" ;;
-  *)              echo "Unsupported architecture"; exit 1 ;;
-esac
-
 FILENAME="shio-${OS}-${ARCH}"
 
+printf "Try shio before installation? (!! Run directly !!) (y/n): "
 while true; do
-    printf "Try shio before installation? (!! Run directly !!) (y/n): "
     read -r choice
     case "$choice" in
         y|Y)
             TMP_DIR=$(mktemp -d)
             trap 'rm -rf "$TMP_DIR"' EXIT
-            curl -fL -o "$TMP_DIR/shio" "$BASE_URL/$FILENAME" || { echo "Download failed"; exit 1; }
+            curl -fL -o "$TMP_DIR/shio" "$BASE_URL/$FILENAME" || { echo "Failed to Download $BASE_URL/$FILENAME"; exit 1; }
             chmod +x "$TMP_DIR/shio"
             "$TMP_DIR/shio" "$@"
             printf "Proceed with installation? (y/n): "
