@@ -14,10 +14,10 @@
     </div>
 </div>
 
-![looksmaxxing](etc/edited-6469.jpg)
-![looksmaxxing](etc/edited-6468.jpg)
-![looksmaxxing](etc/edited-6467.jpg)
-![looksmaxxing](etc/edited-6466.jpg)
+![looksmaxxing](assets/edited-6469.jpg)
+![looksmaxxing](assets/edited-6468.jpg)
+![looksmaxxing](assets/edited-6467.jpg)
+![looksmaxxing](assets/edited-6466.jpg)
 
 ## Quick Links
 
