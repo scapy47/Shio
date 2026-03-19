@@ -19,7 +19,7 @@
 ![looksmaxxing](assets/edited-6469.jpg)
 ![looksmaxxing](assets/edited-6468.jpg)
 ![looksmaxxing](assets/edited-6467.jpg)
-![looksmaxxing](assets/edited-6466.jpg)
+![looksmaxxing](https://raw.githubusercontent.com/scapy47/Shio/refs/heads/main/assets/edited-6466.jpg)
 
 ## Quick Links
 
@@ -67,3 +67,6 @@ curl -fsSL https://raw.githubusercontent.com/Scapy47/Shio/refs/heads/main/etc/se
 ```powershell
 irm https://raw.githubusercontent.com/Scapy47/Shio/refs/heads/main/etc/setup.ps1 | iex
 ```
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbMTI4NTM5NzA2Ml19
+-->
