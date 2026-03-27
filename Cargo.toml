@@ -1,7 +1,13 @@
 [package]
-name = "shio"
+name = "sho"
 version = "0.2.1"
 edition = "2024"
+description = "blazingly fast TUI anime browser"
+license = "GPL-2.0"
+repository = "https://github.com/Scapy47/shio"
+readme = "README.md"
+keywords = ["cli", "tool"]
+categories = ["command-line-utilities"]
 
 [profile.release]
 opt-level = "z"
