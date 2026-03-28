@@ -1,6 +1,6 @@
 <div id="top">
     <div align="center">
-        <h1>Shio</h1>
+        <h1>Sho</h1>
         <p>blazingly fast TUI anime browser, written in rust.</p>
         <p>inspired by ani-cli from <a href="https://github.com/pystardust/ani-cli">pystardust</a></p>
         <p>
@@ -8,18 +8,18 @@
             <a href="https://www.blazingly.fast">
                 <img src="https://www.blazingly.fast/api/badge.svg?repo=Scapy47%2FShio" alt="blazingly fast" />
             </a>
-            <a href="https://github.com/Scapy47/Shio/actions/workflows/release.yaml">
-                <img src="https://github.com/Scapy47/Shio/actions/workflows/release.yaml/badge.svg" alt="Build and Release" />
+            <a href="https://github.com/Scapy47/Sho/actions/workflows/release.yaml">
+                <img src="https://github.com/Scapy47/Sho/actions/workflows/release.yaml/badge.svg" alt="Build and Release" />
             </a>
         </p>
     </div>
 </div>
 
 ## Screenshots
-![looksmaxxing](https://raw.githubusercontent.com/scapy47/Shio/refs/heads/main/assets/edited-6469.jpg)
-![looksmaxxing](https://raw.githubusercontent.com/scapy47/Shio/refs/heads/main/assets/edited-6468.jpg)
-![looksmaxxing](https://raw.githubusercontent.com/scapy47/Shio/refs/heads/main/assets/edited-6467.jpg)
-![looksmaxxing](https://raw.githubusercontent.com/scapy47/Shio/refs/heads/main/assets/edited-6466.jpg)
+![looksmaxxing](https://raw.githubusercontent.com/scapy47/Sho/refs/heads/main/assets/edited-6469.jpg)
+![looksmaxxing](https://raw.githubusercontent.com/scapy47/Sho/refs/heads/main/assets/edited-6468.jpg)
+![looksmaxxing](https://raw.githubusercontent.com/scapy47/Sho/refs/heads/main/assets/edited-6467.jpg)
+![looksmaxxing](https://raw.githubusercontent.com/scapy47/Sho/refs/heads/main/assets/edited-6466.jpg)
 
 ## Quick Links
 
@@ -39,20 +39,20 @@
 
 ### Setup Player
 
-Shio uses the `SHIO_PLAYER_CMD` environment variable to launch your media player. Set it to your player of choice — **mpv** and **VLC** are recommended.
+Sho uses the `SHO_PLAYER_CMD` environment variable to launch your media player. Set it to your player of choice — **mpv** and **VLC** are recommended.
 
 **mpv**
 ```sh
-export SHIO_PLAYER_CMD="mpv --user-agent='{user_agent}' --http-header-fields='Referer: {referer}' '{url}'"
+export SHO_PLAYER_CMD="mpv --user-agent='{user_agent}' --http-header-fields='Referer: {referer}' '{url}'"
 ```
 
 **VLC**
 ```sh
-export SHIO_PLAYER_CMD="vlc --http-user-agent='{user_agent}' --http-referrer='{referer}' '{url}'"
+export SHO_PLAYER_CMD="vlc --http-user-agent='{user_agent}' --http-referrer='{referer}' '{url}'"
 ```
 
 > [!NOTE]
-> `{url}`, `{user_agent}` and `{referer}` are placeholder for values populated by shio.
+> `{url}`, `{user_agent}` and `{referer}` are placeholder for values populated by sho.
 > 
 > `{url}` is url of video, while `{user_agent}` and `{referer}` are headers required for some sources/providers to work.
 
@@ -61,10 +61,10 @@ export SHIO_PLAYER_CMD="vlc --http-user-agent='{user_agent}' --http-referrer='{r
 
 **Linux / macOS**
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Scapy47/Shio/refs/heads/main/etc/setup.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Scapy47/Sho/refs/heads/main/etc/setup.sh | sh
 ```
 
 **Windows**
 ```powershell
-irm https://raw.githubusercontent.com/Scapy47/Shio/refs/heads/main/etc/setup.ps1 | iex
+irm https://raw.githubusercontent.com/Scapy47/Sho/refs/heads/main/etc/setup.ps1 | iex
 ```

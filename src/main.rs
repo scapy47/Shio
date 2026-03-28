@@ -289,7 +289,7 @@ impl App {
                                     };
 
                                     let mut player_cmd =
-                                        env::var("SHIO_PLAYER_CMD").unwrap_or(
+                                        env::var("SHO_PLAYER_CMD").unwrap_or(
                                         "curl -L -H 'Referer: {referer}' -H 'User-Agent: {user_agent}' {url} -O --progress-bar".to_string());
 
                                     if player_cmd.contains("{url}") {

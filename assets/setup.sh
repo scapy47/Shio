@@ -2,7 +2,7 @@
 set -e
 
 OWNER="Scapy47"
-REPO="Shio"
+REPO="Sho"
 BASE_URL="https://github.com/$OWNER/$REPO/releases/latest/download"
 
 case "$(uname -m)" in
@@ -17,18 +17,18 @@ case "$(uname)" in
   *)      echo "Unsupported OS"; exit 1 ;;
 esac
 
-FILENAME="shio-${OS}-${ARCH}"
+FILENAME="sho-${OS}-${ARCH}"
 
-printf "Try shio before installation? (!! Run directly !!) (y/n): "
+printf "Try sho before installation? (!! Run directly !!) (y/n): "
 while true; do
     read -r choice
     case "$choice" in
         y|Y)
             TMP_DIR=$(mktemp -d)
             trap 'rm -rf "$TMP_DIR"' EXIT
-            curl -fL -o "$TMP_DIR/shio" "$BASE_URL/$FILENAME" || { echo "Failed to Download $BASE_URL/$FILENAME"; exit 1; }
-            chmod +x "$TMP_DIR/shio"
-            "$TMP_DIR/shio" "$@"
+            curl -fL -o "$TMP_DIR/sho" "$BASE_URL/$FILENAME" || { echo "Failed to Download $BASE_URL/$FILENAME"; exit 1; }
+            chmod +x "$TMP_DIR/sho"
+            "$TMP_DIR/sho" "$@"
             printf "Proceed with installation? (y/n): "
             read -r install_choice
             case "$install_choice" in
@@ -46,7 +46,7 @@ while true; do
 done
 
 INSTALL_DIR="${XDG_BIN_HOME:-$HOME/.local/bin}"
-FINAL_PATH="$INSTALL_DIR/shio"
+FINAL_PATH="$INSTALL_DIR/sho"
 mkdir -p "$INSTALL_DIR"
 
 echo "Downloading to $FINAL_PATH"
@@ -65,10 +65,10 @@ case ":$PATH:" in
 esac
 
 echo ""
-echo "Run 'shio --version' to verify."
+echo "Run 'sho --version' to verify."
 echo ""
 echo "To enable playback, add one of the following to your shell config:"
 echo '  # mpv'
-echo '  export SHIO_PLAYER_CMD="mpv --user-agent={user_agent} --http-header-fields=\"Referer: {referer}\" {url}"'
+echo '  export SHO_PLAYER_CMD="mpv --user-agent={user_agent} --http-header-fields=\"Referer: {referer}\" {url}"'
 echo '  # VLC'
-echo '  export SHIO_PLAYER_CMD="vlc --http-user-agent={user_agent} --http-referrer={referer} {url}"'
+echo '  export SHO_PLAYER_CMD="vlc --http-user-agent={user_agent} --http-referrer={referer} {url}"'
